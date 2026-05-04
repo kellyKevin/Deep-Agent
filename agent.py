@@ -3,23 +3,47 @@ import json
 import time
 import datetime
 import os
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
 
 class BaseAgent:
     def __init__(self, name: str):
         self.name = name
         self.logger = logging.getLogger(name)
 
-class SoilAgent(BaseAgent):
+class WeatherSubagent(BaseAgent):
+    """Purpose: Understand external conditions."""
+    def __init__(self):
+        super().__init__("WeatherSubagent")
+
+    def analyze(self, weather_data: Dict[str, Any]) -> Dict[str, Any]:
+        rain_expected = weather_data.get("rain_expected", False)
+        temperature = weather_data.get("temperature", 20)
+        time_of_day = weather_data.get("time_of_day", 12)
+
+        # High evaporation risk if hot and during the day
+        high_evaporation = temperature > 30 and (8 <= time_of_day <= 18)
+
+        return {
+            "rain_expected": rain_expected,
+            "temperature": temperature,
+            "high_evaporation": high_evaporation,
+            "can_wait_for_rain": rain_expected and temperature < 35,
+            "summary": "Rain expected" if rain_expected else "No rain expected"
+        }
+
+class SoilIntelligenceAgent(BaseAgent):
+    """Purpose: Analyze soil behavior over time."""
     def __init__(self, threshold_dry: int = 40, threshold_extremely_dry: int = 20, threshold_wet: int = 70):
-        super().__init__("SoilAgent")
+        super().__init__("SoilIntelligenceAgent")
         self.threshold_dry = threshold_dry
         self.threshold_extremely_dry = threshold_extremely_dry
         self.threshold_wet = threshold_wet
 
-    def analyze(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        moisture = data.get("soil_moisture", 50)
-        humidity = data.get("humidity", 50)
+    def analyze(self, soil_data: Dict[str, Any], history: List[Dict[str, Any]] = None) -> Dict[str, Any]:
+        moisture = soil_data.get("soil_moisture", 50)
 
         status = "optimal"
         if moisture < self.threshold_dry:
@@ -29,39 +53,32 @@ class SoilAgent(BaseAgent):
         elif moisture > self.threshold_wet:
             status = "wet"
 
+        # Detect drying patterns if history is available
+        trend = "stable"
+        if history and len(history) >= 2:
+            recent_moistures = [h.get("sensors", {}).get("moisture", 50) for h in history[-3:]]
+            if len(recent_moistures) >= 2:
+                diff = recent_moistures[-1] - recent_moistures[0]
+                if diff < -2:
+                    trend = "drying_fast"
+                elif diff < 0:
+                    trend = "drying"
+                elif diff > 2:
+                    trend = "hydrating_fast"
+                elif diff > 0:
+                    trend = "hydrating"
+
         return {
             "moisture": moisture,
-            "humidity": humidity,
             "status": status,
+            "trend": trend,
             "needs_water": status in ["dry", "extremely_dry"]
         }
 
-class WeatherAgent(BaseAgent):
+class IrrigationDecisionAgent(BaseAgent):
+    """Purpose: Decide watering strategy."""
     def __init__(self):
-        super().__init__("WeatherAgent")
-
-    def analyze(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        rain_expected = data.get("rain_expected", False)
-        temperature = data.get("temperature", 20)
-        time_of_day = data.get("time_of_day", 12)
-
-        # High evaporation risk if hot and during the day
-        high_evaporation = temperature > 30 and (8 <= time_of_day <= 18)
-
-        return {
-            "rain_expected": rain_expected,
-            "temperature": temperature,
-            "high_evaporation": high_evaporation,
-            "can_wait_for_rain": rain_expected and temperature < 35
-        }
-
-class CoordinationAgent(BaseAgent):
-    def __init__(self, api_client=None):
-        super().__init__("CoordinationAgent")
-        self.api_client = api_client
-        self.soil_agent = SoilAgent()
-        self.weather_agent = WeatherAgent()
-        self.knowledge_base_path = "knowledge_base.json"
+        super().__init__("IrrigationDecisionAgent")
 
     def _is_recent_watering(self, last_watered: str) -> bool:
         if not last_watered:
@@ -79,23 +96,19 @@ class CoordinationAgent(BaseAgent):
                 pass
         return False
 
-    def decide(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        soil_results = self.soil_agent.analyze(data)
-        weather_results = self.weather_agent.analyze(data)
-        last_watered = data.get("last_watered", "unknown")
-
+    def decide(self, soil_info: Dict[str, Any], weather_info: Dict[str, Any], last_watered: str) -> Dict[str, Any]:
         decision = "OFF"
         reasons = []
         confidence = "high"
 
-        if soil_results["status"] == "wet":
+        if soil_info["status"] == "wet":
             decision = "OFF"
-            reasons.append(f"Soil is wet ({soil_results['moisture']}%).")
-        elif soil_results["status"] == "optimal":
+            reasons.append(f"Soil is wet ({soil_info['moisture']}%).")
+        elif soil_info["status"] == "optimal":
             decision = "OFF"
-            reasons.append(f"Soil moisture is optimal ({soil_results['moisture']}%).")
-        elif soil_results["needs_water"]:
-            if weather_results["can_wait_for_rain"] and soil_results["status"] != "extremely_dry":
+            reasons.append(f"Soil moisture is optimal ({soil_info['moisture']}%).")
+        elif soil_info["needs_water"]:
+            if weather_info["can_wait_for_rain"] and soil_info["status"] != "extremely_dry":
                 decision = "OFF"
                 reasons.append("Soil is dry but rain is expected soon. Conserving water.")
             elif self._is_recent_watering(last_watered):
@@ -103,78 +116,50 @@ class CoordinationAgent(BaseAgent):
                 reasons.append(f"Soil is dry but it was recently watered ({last_watered}). Waiting for absorption.")
             else:
                 decision = "ON"
-                reasons.append(f"Soil is {soil_results['status']} and no immediate relief from weather.")
-                if weather_results["high_evaporation"]:
-                    reasons.append("High evaporation risk detected.")
+                reasons.append(f"Soil is {soil_info['status']} and no immediate relief from weather.")
+                if weather_info["high_evaporation"]:
+                    reasons.append("High evaporation risk detected due to heat.")
+                if soil_info["trend"] == "drying_fast":
+                    reasons.append("Soil is drying fast.")
 
         return {
             "decision": decision,
             "reason": " ".join(reasons),
-            "confidence": confidence,
-            "metadata": {
-                "soil": soil_results,
-                "weather": weather_results,
-                "timestamp": time.time()
-            }
+            "confidence": confidence
         }
 
-    def run_once(self) -> Dict[str, Any]:
-        if not self.api_client:
-            raise ValueError("API client not configured.")
+class LearningAgent(BaseAgent):
+    """Purpose: Improve system over time, build knowledge base."""
+    def __init__(self, knowledge_base_path: str = "knowledge_base.json"):
+        super().__init__("LearningAgent")
+        self.knowledge_base_path = knowledge_base_path
 
-        try:
-            soil_data = self.api_client.get_soil_data()
-            weather_data = self.api_client.get_weather()
-            input_data = {**soil_data, **weather_data}
-
-            # Evaluate previous actions before deciding
-            self._evaluate_effectiveness()
-
-            result = self.decide(input_data)
-            self.api_client.post_pump(result["decision"])
-
-            self._log_insight(input_data, result)
-
-            return result
-        except Exception as e:
-            self.logger.error(f"Error in agent run: {e}")
-            return {
-                "decision": "OFF",
-                "reason": f"Agent error: {str(e)}",
-                "confidence": "low"
-            }
-
-    def _evaluate_effectiveness(self):
-        """
-        Looks at history to see if previous watering actions were effective.
-        """
-        if not hasattr(self.api_client, 'get_history'):
-            return
-
-        history = self.api_client.get_history()
-        if len(history) < 2:
-            return
-
-        # Simple check: if last action was PUMP_ON, did moisture increase?
-        last_event = history[-1]
-        if last_event["action"] == "PUMP_ON":
-            current_moisture = self.api_client.get_soil_data()["soil_moisture"]
-            prev_moisture = last_event["sensors"]["moisture"]
-
-            improvement = current_moisture - prev_moisture
-            self.logger.info(f"Feedback Loop: Last watering improvement: {improvement}% moisture.")
-
-            if improvement <= 0:
-                self.logger.warning("Feedback Loop: Watering detected but no moisture improvement. Possible sensor or pump issue.")
-
-    def _log_insight(self, input_data: Dict[str, Any], result: Dict[str, Any]):
-        """Store insights for future model 'inheritance'."""
+    def learn(self, input_data: Dict[str, Any], result: Dict[str, Any], history: List[Dict[str, Any]]):
+        """Compares action vs outcome and stores insights."""
         insight = {
+            "timestamp": datetime.datetime.now().isoformat(),
             "input": input_data,
             "decision": result["decision"],
-            "reason": result["reason"],
-            "timestamp": datetime.datetime.now().isoformat()
+            "reason": result["reason"]
         }
+
+        # Evaluate previous action effectiveness if available
+        if history and len(history) >= 1:
+            last_event = history[-1]
+            if last_event["action"] == "PUMP_ON":
+                current_moisture = input_data.get("soil_moisture", 0)
+                prev_moisture = last_event.get("sensors", {}).get("moisture", 0)
+                improvement = current_moisture - prev_moisture
+                insight["effectiveness"] = {
+                    "moisture_gain": improvement,
+                    "status": "effective" if improvement > 0 else "ineffective"
+                }
+                if improvement <= 0:
+                    self.logger.warning(f"Ineffective watering detected. Gain: {improvement}%")
+
+        self._save_insight(insight)
+
+    def _save_insight(self, insight: Dict[str, Any]):
         try:
             insights = []
             if os.path.exists(self.knowledge_base_path):
@@ -185,7 +170,6 @@ class CoordinationAgent(BaseAgent):
                         pass
 
             insights.append(insight)
-            # Keep a rolling window of insights
             if len(insights) > 500:
                 insights = insights[-500:]
 
@@ -194,6 +178,86 @@ class CoordinationAgent(BaseAgent):
         except Exception as e:
             self.logger.error(f"Failed to log insight: {e}")
 
-# Maintain backward compatibility for main.py
-class SmartIrrigationAgent(CoordinationAgent):
+class DeviceControlAgent(BaseAgent):
+    """Purpose: Interface with ESP32 / Mock API."""
+    def __init__(self, api_client):
+        super().__init__("DeviceControlAgent")
+        self.api_client = api_client
+
+    def get_telemetry(self) -> Dict[str, Any]:
+        soil_data = self.api_client.get_soil_data()
+        weather_data = self.api_client.get_weather()
+        history = []
+        if hasattr(self.api_client, 'get_history'):
+            history = self.api_client.get_history()
+
+        return {
+            "soil": soil_data,
+            "weather": weather_data,
+            "history": history
+        }
+
+    def execute_command(self, decision: str):
+        if self.api_client:
+            self.api_client.post_pump(decision)
+
+class MissionControlAgent(BaseAgent):
+    """Main Agent: The Mission Controller. Coordinates subagents."""
+    def __init__(self, api_client=None):
+        super().__init__("MissionControlAgent")
+        self.device_control = DeviceControlAgent(api_client)
+        self.weather_subagent = WeatherSubagent()
+        self.soil_intelligence = SoilIntelligenceAgent()
+        self.decision_subagent = IrrigationDecisionAgent()
+        self.learning_agent = LearningAgent()
+
+    def run_once(self) -> Dict[str, Any]:
+        try:
+            # 1. Receive data from Device (ESP32)
+            telemetry = self.device_control.get_telemetry()
+            soil_data = telemetry["soil"]
+            weather_data = telemetry["weather"]
+            history = telemetry["history"]
+
+            # 2. Subagents Analyze
+            weather_info = self.weather_subagent.analyze(weather_data)
+            soil_info = self.soil_intelligence.analyze(soil_data, history)
+
+            # 3. Decision Subagent decides
+            last_watered = soil_data.get("last_watered", "unknown")
+            result = self.decision_subagent.decide(soil_info, weather_info, last_watered)
+
+            # 4. Device Control executes
+            self.device_control.execute_command(result["decision"])
+
+            # 5. Learning Subagent records outcome
+            input_context = {**soil_data, **weather_data}
+            self.learning_agent.learn(input_context, result, history)
+
+            # Include metadata for transparency
+            result["metadata"] = {
+                "soil": soil_info,
+                "weather": weather_info,
+                "timestamp": time.time()
+            }
+
+            return result
+
+        except Exception as e:
+            self.logger.error(f"Error in Mission Control: {e}")
+            return {
+                "decision": "OFF",
+                "reason": f"System error: {str(e)}",
+                "confidence": "low"
+            }
+
+    def decide(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Direct decision method for testing and compatibility."""
+        weather_info = self.weather_subagent.analyze(data)
+        soil_info = self.soil_intelligence.analyze(data)
+        last_watered = data.get("last_watered", "unknown")
+        return self.decision_subagent.decide(soil_info, weather_info, last_watered)
+
+# Maintain backward compatibility for main.py and test_agent.py
+class SmartIrrigationAgent(MissionControlAgent):
     pass
