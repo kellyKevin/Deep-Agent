@@ -1,59 +1,83 @@
-# 🧠 🌱 Smart Irrigation Deep Agent
+# 🌌 🧠 🌱 Smart Irrigation Deep Agent: The Big Shift
 
-An autonomous Smart Irrigation AI Agent responsible for managing water usage efficiently based on environmental data.
+An autonomous Multi-Agent Smart Farming System inspired by the concept of "Deep Agents" and distributed intelligence. This system manages water usage efficiently by coordinating specialized AI agents.
 
-## 🎯 Goal
-Optimize plant health while minimizing unnecessary water usage by making data-driven decisions.
+## 🚀 The Big Shift: Multi-Agent Intelligence
+Intelligence is not one big brain — it’s many small specialized agents working together. This project transforms a monolithic irrigation script into a modular "Mission Control" ecosystem.
 
-## 🏗 Architecture
-The system consists of three main components:
--   **Agent (`agent.py`)**: Contains the core decision-making logic.
--   **Mock API (`mock_api.py`)**: Simulates the environment (soil data, weather, pump control).
--   **Runner (`main.py`)**: The entry point that executes the agent in a continuous loop.
+## 🏗 Multi-Agent Architecture
+
+### 🤖 1. Mission Control Agent (The "Mission Controller")
+The central AI that receives telemetry from the hardware (ESP32/Mock), coordinates analysis across subagents, and executes the final decision.
+
+### 🌧 Weather Subagent
+**Purpose:** Understand external conditions.
+- Uses weather forecasts.
+- Predicts rain and high evaporation risks.
+- Answers: "Will it rain soon?"
+
+### 🌱 Soil Intelligence Subagent
+**Purpose:** Analyze soil behavior over time.
+- Tracks moisture trends (drying fast, stable, hydrating).
+- Detects patterns in how the soil retains water.
+
+### 💧 Irrigation Decision Subagent
+**Purpose:** Decide watering strategy.
+- Combines insights from Soil and Weather subagents.
+- Implements conservative watering logic to save water.
+
+### 📊 Learning Subagent
+**Purpose:** Improve system over time (The "Future Intelligence" layer).
+- Compares actions vs. outcomes.
+- Stores insights in `knowledge_base.json` for "inheritance" across sessions.
+
+### ⚙️ Device Control Subagent
+**Purpose:** Interface with the physical world.
+- Sends commands to the pump.
+- Aggregates sensor telemetry.
+
+## 🔁 How They Work Together
+1. **ESP32** → Sends soil & weather telemetry.
+2. **Mission Control** → Asks Subagents for context.
+3. **Weather Subagent** → "Rain expected in 2 hours."
+4. **Soil Subagent** → "Soil retains water well; trend is stable."
+5. **Decision Subagent** → "Decision: Wait — don't water."
+6. **Device Control** → Sends `OFF` command.
+7. **Learning Subagent** → Logs the decision for future optimization.
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 - Python 3.8+
-
-### Installation
-1. Clone the repository.
-2. Install dependencies (optional, as the mock version has no external requirements):
-```bash
-pip install -r requirements.txt
-```
+- `pip install -r requirements.txt`
 
 ### Running the Agent
 Execute the continuous monitoring loop:
 ```bash
 python3 main.py
 ```
-By default, the agent checks conditions every 10 seconds (configurable via `CHECK_INTERVAL` environment variable).
 
 ### Running Tests
-Verify the agent's logic across different scenarios:
+Verify the multi-agent logic and trend analysis:
 ```bash
 python3 test_agent.py
 ```
 
-## 🧠 Decision Logic
-The agent follows a 5-step process:
-1.  **Analyze soil moisture**: Dry (<40%), Optimal (40–70%), Wet (>70%).
-2.  **Analyze weather**: Postpone watering if rain is expected, unless soil is extremely dry (<20%).
-3.  **Check history**: Avoid overwatering if recently watered (within 4 hours).
-4.  **Execute**: Turn pump ON/OFF via POST request.
-5.  **Reason**: Log the decision-making process in strict JSON format.
-
 ## 📦 Output Format
+The system communicates in strict JSON for interoperability:
 ```json
 {
-  "decision": "ON",
-  "reason": "Soil is dry and no rain is expected. High temperature (35°C) increases evaporation risk.",
-  "confidence": "high"
+  "decision": "OFF",
+  "reason": "Soil is dry but rain is expected soon. Conserving water.",
+  "confidence": "high",
+  "metadata": {
+    "soil": { "moisture": 35, "status": "dry", "trend": "stable" },
+    "weather": { "rain_expected": true, "summary": "Rain expected" }
+  }
 }
 ```
 
-## 📜 Rules
--   **Water Conservation**: Never waste water if rain is imminent.
--   **Plant Health**: Prioritize hydration when moisture levels are critically low.
--   **Stability**: Avoid rapid ON/OFF cycles.
+## 📜 Principles
+- **Separation of Concerns**: Weather ≠ Soil ≠ Control. Each task is isolated for clean reasoning.
+- **Future Intelligence**: Decisions are recorded to build a long-term knowledge base.
+- **Water Conservation**: Prioritize plant health while minimizing waste through predictive analysis.
