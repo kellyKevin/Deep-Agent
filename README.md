@@ -1,25 +1,62 @@
-# Smart Irrigation Deep Agent
+# 🧠 🌱 Smart Irrigation Deep Agent
 
-This project implements an autonomous Smart Irrigation AI Agent responsible for managing water usage efficiently based on environmental data.
+An autonomous Smart Irrigation AI Agent responsible for managing water usage efficiently based on environmental data.
 
-## Features
-- Analyzes soil moisture, temperature, and rain forecast.
-- Makes watering decisions (ON/OFF) based on a structured decision-making process.
-- Minimizes water waste while prioritizing plant health.
-- Provides reasoning for each decision in a strict JSON format.
+## 🎯 Goal
+Optimize plant health while minimizing unnecessary water usage.
 
-## Decision Logic
-1. **Analyze soil condition**:
-   - < 40: Dry
-   - 40–70: Optimal
-   - > 70: Wet
-2. **Analyze weather conditions**:
-   - Rain expected: Avoid watering unless extremely dry.
-   - High temperature (>30°C): Consider faster evaporation.
-3. **Consider recent watering**: Avoid overwatering if recently watered.
-4. **Output**: Strict JSON with `decision`, `reason`, and `confidence`.
+## 🚀 How it Works
+The agent follows a 5-step decision-making process:
 
-## APIs Used
-- `GET /soil-data`
-- `GET /weather`
-- `POST /pump`
+1.  **Analyze soil condition**:
+    -   `soil_moisture < 40` → Dry
+    -   `soil_moisture between 40–70` → Optimal
+    -   `soil_moisture > 70` → Wet
+2.  **Analyze weather conditions**:
+    -   If `rain_expected` is true, avoid watering unless the soil is extremely dry (< 20%).
+    -   If `temperature > 30°C`, consider faster evaporation.
+3.  **Consider recent watering**:
+    -   Avoid overwatering if the system was recently activated.
+4.  **Make a decision**:
+    -   Turn pump `ON` only if necessary.
+    -   Otherwise, keep pump `OFF`.
+5.  **Provide reasoning**:
+    -   Explain the reasoning behind the decision in a structured format.
+
+## 🛠 Tools (APIs)
+-   `GET /soil-data` → returns soil moisture, temperature, and last watered time.
+-   `GET /weather` → returns rain forecast and temperature.
+-   `POST /pump` → turns irrigation system ON or OFF.
+
+## 📦 Output Format (Strict JSON)
+```json
+{
+  "decision": "ON" or "OFF",
+  "reason": "clear explanation of your reasoning",
+  "confidence": "high/medium/low"
+}
+```
+
+## 💻 Usage
+
+### Prerequisites
+- Python 3.x
+
+### Running the Agent
+To see the agent in action using the mock API:
+```bash
+python3 agent.py
+```
+
+### Running Tests
+To run the unit tests and verify the logic:
+```bash
+python3 test_agent.py
+```
+
+## 📜 Rules
+- Never waste water.
+- Prioritize plant health.
+- Be cautious with watering if rain is expected.
+- Avoid rapid switching ON/OFF.
+- Base decisions ONLY on provided data.

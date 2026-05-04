@@ -1,163 +1,82 @@
 import json
-from datetime import datetime
-
-class WeatherAgent:
-    def analyze(self, data):
-        rain_expected = data.get("rain_expected")
-        temperature = data.get("temperature")
-
-        recommendation = "NEUTRAL"
-        reason = ""
-
-        if rain_expected:
-            recommendation = "OFF"
-            reason = "Rain is expected soon."
-        elif temperature > 30:
-            recommendation = "ON"
-            reason = "High temperature (>30°C) increases evaporation risk."
-
-        return {"recommendation": recommendation, "reason": reason}
-
-class SoilAgent:
-    def analyze(self, data):
-        soil_moisture = data.get("soil_moisture")
-        last_watered = data.get("last_watered")
-
-        if soil_moisture < 20:
-            status = "CRITICAL"
-        elif soil_moisture < 40:
-            status = "DRY"
-        elif 40 <= soil_moisture <= 70:
-            status = "OPTIMAL"
-        else:
-            status = "WET"
-
-        recommendation = "NEUTRAL"
-        reason = ""
-
-        if status == "WET":
-            recommendation = "OFF"
-            reason = "Soil is already wet."
-        elif status == "OPTIMAL":
-            recommendation = "OFF"
-            reason = "Soil moisture is at an optimal level."
-        elif status == "CRITICAL":
-            recommendation = "ON"
-            reason = "Soil is extremely dry (<20%)."
-        elif status == "DRY":
-            # Check if recently watered
-            is_recent = False
-            if "minute" in last_watered:
-                is_recent = True
-            elif "hour" in last_watered:
-                try:
-                    hours = int(last_watered.split()[0])
-                    if hours < 4:
-                        is_recent = True
-                except ValueError:
-                    pass
-
-            if is_recent:
-                recommendation = "OFF"
-                reason = f"Soil is dry but it was recently watered ({last_watered})."
-            else:
-                recommendation = "ON"
-                reason = "Soil is dry and needs watering."
-
-        return {"recommendation": recommendation, "reason": reason, "status": status}
 
 class SmartIrrigationAgent:
     def __init__(self, api_client=None):
         self.api_client = api_client
-        self.weather_agent = WeatherAgent()
-        self.soil_agent = SoilAgent()
-
-    def evaluate_last_action(self):
-        """
-        Feedback Loop: Evaluate if the last watering action was effective.
-        """
-        if not self.api_client:
-            return
-
-        history = self.api_client.get_history()
-        if not history:
-            return
-
-        # Find the last pump ON action and its subsequent sensor reading
-        last_pump_on = None
-        for entry in reversed(history):
-            if entry.get("action") == "pump" and entry.get("state") == "ON":
-                last_pump_on = entry
-                break
-
-        if last_pump_on:
-            # Look for sensor reading after this pump action
-            pump_time = datetime.fromisoformat(last_pump_on["timestamp"])
-            moisture_before = last_pump_on["soil_moisture_before"]
-
-            for entry in history:
-                if entry.get("action") == "sensor_reading":
-                    entry_time = datetime.fromisoformat(entry["timestamp"])
-                    if entry_time > pump_time:
-                        moisture_after = entry["soil_moisture"]
-                        improvement = moisture_after - moisture_before
-
-                        insight = {
-                            "type": "watering_effectiveness",
-                            "improvement": improvement,
-                            "timestamp": entry["timestamp"]
-                        }
-                        self.api_client.add_insight(insight)
-                        break
 
     def decide(self, data):
-        weather_analysis = self.weather_agent.analyze(data)
-        soil_analysis = self.soil_agent.analyze(data)
+        """
+        Decision-making process:
+        Step 1: Analyze soil condition
+        Step 2: Analyze weather conditions
+        Step 3: Consider recent watering
+        Step 4: Make a decision
+        Step 5: Provide reasoning
+        """
+        soil_moisture = data.get("soil_moisture")
+        temperature = data.get("temperature")
+        rain_expected = data.get("rain_expected")
+        last_watered = data.get("last_watered")
 
-        # Consider historical insights
-        insights = data.get("insights", [])
-        avg_improvement = 0
-        if insights:
-            improvements = [i["improvement"] for i in insights if i["type"] == "watering_effectiveness"]
-            if improvements:
-                avg_improvement = sum(improvements) / len(improvements)
+        # Step 1: Analyze soil condition
+        if soil_moisture < 40:
+            soil_status = "dry"
+        elif 40 <= soil_moisture <= 70:
+            soil_status = "optimal"
+        else:
+            soil_status = "wet"
 
         decision = "OFF"
-        reasons = []
+        reason = ""
         confidence = "high"
 
-        soil_rec = soil_analysis["recommendation"]
-        weather_rec = weather_analysis["recommendation"]
-
-        # Coordination Logic
-        if soil_analysis["status"] == "CRITICAL":
-            decision = "ON"
-            reasons.append(soil_analysis["reason"])
-            if weather_rec == "OFF":
-                reasons.append("Watering is necessary despite expected rain due to critical dryness.")
-        elif soil_rec == "ON":
-            if avg_improvement < 5 and insights:
-                reasons.append(f"Historical data suggests watering is not very effective (avg improvement: {avg_improvement:.1f}%).")
-
-            if weather_rec == "OFF":
-                decision = "OFF"
-                reasons.append(soil_analysis["reason"])
-                reasons.append(weather_analysis["reason"])
-                reasons.append("Avoiding unnecessary watering because rain is expected.")
-            else:
-                decision = "ON"
-                reasons.append(soil_analysis["reason"])
-                if weather_analysis["reason"]:
-                    reasons.append(weather_analysis["reason"])
-        else:
+        # Step 2, 3, 4: Logic for decision
+        if soil_status == "wet":
             decision = "OFF"
-            reasons.append(soil_analysis["reason"])
-            if weather_analysis["reason"] and weather_rec == "OFF":
-                reasons.append(weather_analysis["reason"])
+            reason = "Soil is wet (>70% moisture). No watering needed."
+        elif soil_status == "optimal":
+            decision = "OFF"
+            reason = "Soil moisture is at an optimal level (40-70%)."
+        elif soil_status == "dry":
+            # Check for rain
+            if rain_expected:
+                # Unless extremely dry (let's define extremely dry as < 20)
+                if soil_moisture < 20:
+                    decision = "ON"
+                    reason = "Soil is extremely dry (<20%). Watering is necessary despite expected rain."
+                else:
+                    decision = "OFF"
+                    # Check if recently watered to match example reasoning if applicable
+                    if "hour" in last_watered or "minute" in last_watered:
+                        reason = "Soil is dry but rain is expected soon and plants were recently watered. Avoiding unnecessary watering."
+                    else:
+                        reason = "Soil is dry but rain is expected soon. Avoiding unnecessary watering."
+            else:
+                # No rain expected
+                # Check recent watering (e.g., within last 4 hours)
+                is_recent = False
+                if "minute" in last_watered:
+                    is_recent = True
+                elif "hour" in last_watered:
+                    try:
+                        hours = int(last_watered.split()[0])
+                        if hours < 4:
+                            is_recent = True
+                    except ValueError:
+                        pass
+
+                if is_recent:
+                    decision = "OFF"
+                    reason = f"Soil is dry but it was recently watered ({last_watered}). Waiting for moisture to soak in to avoid overwatering."
+                else:
+                    decision = "ON"
+                    reason = "Soil is dry and no rain is expected."
+                    if temperature > 30:
+                        reason += " High temperature (>30°C) is increasing evaporation risk."
 
         return {
             "decision": decision,
-            "reason": " ".join(reasons),
+            "reason": reason,
             "confidence": confidence
         }
 
@@ -168,14 +87,12 @@ class SmartIrrigationAgent:
         try:
             soil_data = self.api_client.get_soil_data()
             weather_data = self.api_client.get_weather()
-            insights = self.api_client.get_insights()
 
             input_data = {
                 "soil_moisture": soil_data["soil_moisture"],
                 "temperature": soil_data["temperature"],
                 "rain_expected": weather_data["rain_expected"],
-                "last_watered": soil_data["last_watered"],
-                "insights": insights
+                "last_watered": soil_data["last_watered"]
             }
 
             result = self.decide(input_data)
