@@ -72,5 +72,52 @@ class TestSmartIrrigationAgent(unittest.TestCase):
         self.assertEqual(result["decision"], "ON")
         self.assertIn("High evaporation risk detected", result["reason"])
 
+    def test_soil_trend_analysis(self):
+        from agent import SoilIntelligenceAgent
+        soil_agent = SoilIntelligenceAgent()
+
+        # Scenario: Soil is drying
+        history = [
+            {"sensors": {"moisture": 45}},
+            {"sensors": {"moisture": 44}},
+            {"sensors": {"moisture": 43}}
+        ]
+        result = soil_agent.analyze({"soil_moisture": 43}, history)
+        self.assertEqual(result["trend"], "drying")
+
+        # Scenario: Soil is drying fast
+        history = [
+            {"sensors": {"moisture": 50}},
+            {"sensors": {"moisture": 47}},
+            {"sensors": {"moisture": 44}}
+        ]
+        result = soil_agent.analyze({"soil_moisture": 44}, history)
+        self.assertEqual(result["trend"], "drying_fast")
+
+    def test_learning_agent_insight_storage(self):
+        import os
+        import json
+        from agent import LearningAgent
+
+        kb_path = "test_knowledge_base.json"
+        if os.path.exists(kb_path):
+            os.remove(kb_path)
+
+        learning_agent = LearningAgent(knowledge_base_path=kb_path)
+
+        input_data = {"soil_moisture": 30}
+        result = {"decision": "ON", "reason": "Dry"}
+        history = [{"action": "PUMP_ON", "sensors": {"moisture": 25}}]
+
+        learning_agent.learn(input_data, result, history)
+
+        self.assertTrue(os.path.exists(kb_path))
+        with open(kb_path, "r") as f:
+            insights = json.load(f)
+            self.assertEqual(len(insights), 1)
+            self.assertEqual(insights[0]["effectiveness"]["moisture_gain"], 5)
+
+        os.remove(kb_path)
+
 if __name__ == "__main__":
     unittest.main()

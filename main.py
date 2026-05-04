@@ -27,8 +27,8 @@ def main():
             logger.info("Analyzing conditions...")
             result = agent.run_once()
 
-            # Print decision in strict JSON format as requested by the master prompt
-            print(json.dumps(result, indent=2))
+            # Print decision in strict JSON format
+            print(json.dumps(result, indent=2), flush=True)
 
             logger.info(f"Decision: {result['decision']} | Confidence: {result['confidence']}")
 
