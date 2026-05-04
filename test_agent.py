@@ -26,7 +26,7 @@ class TestSmartIrrigationAgent(unittest.TestCase):
         }
         result = self.agent.decide(data)
         self.assertEqual(result["decision"], "ON")
-        self.assertIn("Soil is dry and no rain is expected", result["reason"])
+        self.assertIn("Soil is dry and no immediate relief", result["reason"])
 
     def test_extremely_dry_with_rain(self):
         data = {
@@ -37,7 +37,7 @@ class TestSmartIrrigationAgent(unittest.TestCase):
         }
         result = self.agent.decide(data)
         self.assertEqual(result["decision"], "ON")
-        self.assertIn("extremely dry", result["reason"])
+        self.assertIn("extremely_dry", result["reason"])
 
     def test_optimal_moisture(self):
         data = {
@@ -65,11 +65,12 @@ class TestSmartIrrigationAgent(unittest.TestCase):
             "soil_moisture": 30,
             "temperature": 35,
             "rain_expected": False,
-            "last_watered": "10 hours ago"
+            "last_watered": "10 hours ago",
+            "time_of_day": 14
         }
         result = self.agent.decide(data)
         self.assertEqual(result["decision"], "ON")
-        self.assertIn("High temperature (35°C)", result["reason"])
+        self.assertIn("High evaporation risk detected", result["reason"])
 
 if __name__ == "__main__":
     unittest.main()
