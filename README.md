@@ -3,60 +3,57 @@
 An autonomous Smart Irrigation AI Agent responsible for managing water usage efficiently based on environmental data.
 
 ## 🎯 Goal
-Optimize plant health while minimizing unnecessary water usage.
+Optimize plant health while minimizing unnecessary water usage by making data-driven decisions.
 
-## 🚀 How it Works
-The agent follows a 5-step decision-making process:
+## 🏗 Architecture
+The system consists of three main components:
+-   **Agent (`agent.py`)**: Contains the core decision-making logic.
+-   **Mock API (`mock_api.py`)**: Simulates the environment (soil data, weather, pump control).
+-   **Runner (`main.py`)**: The entry point that executes the agent in a continuous loop.
 
-1.  **Analyze soil condition**:
-    -   `soil_moisture < 40` → Dry
-    -   `soil_moisture between 40–70` → Optimal
-    -   `soil_moisture > 70` → Wet
-2.  **Analyze weather conditions**:
-    -   If `rain_expected` is true, avoid watering unless the soil is extremely dry (< 20%).
-    -   If `temperature > 30°C`, consider faster evaporation.
-3.  **Consider recent watering**:
-    -   Avoid overwatering if the system was recently activated.
-4.  **Make a decision**:
-    -   Turn pump `ON` only if necessary.
-    -   Otherwise, keep pump `OFF`.
-5.  **Provide reasoning**:
-    -   Explain the reasoning behind the decision in a structured format.
-
-## 🛠 Tools (APIs)
--   `GET /soil-data` → returns soil moisture, temperature, and last watered time.
--   `GET /weather` → returns rain forecast and temperature.
--   `POST /pump` → turns irrigation system ON or OFF.
-
-## 📦 Output Format (Strict JSON)
-```json
-{
-  "decision": "ON" or "OFF",
-  "reason": "clear explanation of your reasoning",
-  "confidence": "high/medium/low"
-}
-```
-
-## 💻 Usage
+## 🚀 Getting Started
 
 ### Prerequisites
-- Python 3.x
+- Python 3.8+
 
-### Running the Agent
-To see the agent in action using the mock API:
+### Installation
+1. Clone the repository.
+2. Install dependencies (optional, as the mock version has no external requirements):
 ```bash
-python3 agent.py
+pip install -r requirements.txt
 ```
 
+### Running the Agent
+Execute the continuous monitoring loop:
+```bash
+python3 main.py
+```
+By default, the agent checks conditions every 10 seconds (configurable via `CHECK_INTERVAL` environment variable).
+
 ### Running Tests
-To run the unit tests and verify the logic:
+Verify the agent's logic across different scenarios:
 ```bash
 python3 test_agent.py
 ```
 
+## 🧠 Decision Logic
+The agent follows a 5-step process:
+1.  **Analyze soil moisture**: Dry (<40%), Optimal (40–70%), Wet (>70%).
+2.  **Analyze weather**: Postpone watering if rain is expected, unless soil is extremely dry (<20%).
+3.  **Check history**: Avoid overwatering if recently watered (within 4 hours).
+4.  **Execute**: Turn pump ON/OFF via POST request.
+5.  **Reason**: Log the decision-making process in strict JSON format.
+
+## 📦 Output Format
+```json
+{
+  "decision": "ON",
+  "reason": "Soil is dry and no rain is expected. High temperature (35°C) increases evaporation risk.",
+  "confidence": "high"
+}
+```
+
 ## 📜 Rules
-- Never waste water.
-- Prioritize plant health.
-- Be cautious with watering if rain is expected.
-- Avoid rapid switching ON/OFF.
-- Base decisions ONLY on provided data.
+-   **Water Conservation**: Never waste water if rain is imminent.
+-   **Plant Health**: Prioritize hydration when moisture levels are critically low.
+-   **Stability**: Avoid rapid ON/OFF cycles.
