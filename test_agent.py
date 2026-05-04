@@ -1,6 +1,12 @@
 import unittest
 import json
-from agent import SmartIrrigationAgent
+import os
+import sys
+
+# Ensure the root directory is in the path
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+from agents import SmartIrrigationAgent
 
 class TestSmartIrrigationAgent(unittest.TestCase):
     def setUp(self):
@@ -73,7 +79,7 @@ class TestSmartIrrigationAgent(unittest.TestCase):
         self.assertIn("High evaporation risk detected", result["reason"])
 
     def test_soil_trend_analysis(self):
-        from agent import SoilIntelligenceAgent
+        from agents.soil_agent import SoilIntelligenceAgent
         soil_agent = SoilIntelligenceAgent()
 
         # Scenario: Soil is drying
@@ -97,7 +103,7 @@ class TestSmartIrrigationAgent(unittest.TestCase):
     def test_learning_agent_insight_storage(self):
         import os
         import json
-        from agent import LearningAgent
+        from agents.learning_agent import LearningAgent
 
         kb_path = "test_knowledge_base.json"
         if os.path.exists(kb_path):
