@@ -3,30 +3,36 @@ from typing import Dict, Any
 
 from .base import BaseAgent
 from .weather_agent import WeatherSubagent
-from .soil_agent import SoilIntelligenceAgent
-from .decision_agent import IrrigationDecisionAgent
-from .learning_agent import LearningAgent
-from .device_agent import DeviceControlAgent
+from .soil_agent import SoilIntelligenceSubagent
+from .decision_agent import IrrigationDecisionSubagent
+from .learning_agent import LearningSubagent
+from .device_agent import DeviceControlSubagent
 
 from skills.watering_skill import WateringProcedureSkill
 from skills.rain_check_skill import RainPredictionSkill
 from skills.learning_skill import LearningUpdateSkill
 
 class MissionControlAgent(BaseAgent):
-    """Main Agent: The Mission Controller. Coordinates subagents and skills."""
+    """
+    Main Agent: The Mission Controller.
+    NASA mission control in Interstellar.
+    Receives data from ESP32.
+    Decides what needs to happen.
+    Delegates tasks to subagents.
+    """
     def __init__(self, api_client=None):
         super().__init__("MissionControlAgent")
         # Subagents
-        self.device_control = DeviceControlAgent(api_client)
+        self.device_control = DeviceControlSubagent(api_client)
         self.weather_subagent = WeatherSubagent()
-        self.soil_intelligence = SoilIntelligenceAgent()
-        self.decision_subagent = IrrigationDecisionAgent()
-        self.learning_agent = LearningAgent()
+        self.soil_intelligence = SoilIntelligenceSubagent()
+        self.decision_subagent = IrrigationDecisionSubagent()
+        self.learning_subagent = LearningSubagent()
 
         # Skills
         self.watering_skill = WateringProcedureSkill(self.device_control)
         self.rain_check_skill = RainPredictionSkill()
-        self.learning_skill = LearningUpdateSkill(self.learning_agent)
+        self.learning_skill = LearningUpdateSkill(self.learning_subagent)
 
     def run_once(self) -> Dict[str, Any]:
         try:
@@ -45,7 +51,7 @@ class MissionControlAgent(BaseAgent):
             weather_info["rain_probability"] = rain_analysis["rain_probability"]
 
             # 3. Decision Subagent decides (Inheriting intelligence from past insights)
-            insights = self.learning_agent.get_insights()
+            insights = self.learning_subagent.get_insights()
             last_watered = soil_data.get("last_watered", "unknown")
             result = self.decision_subagent.decide(soil_info, weather_info, last_watered, insights)
 

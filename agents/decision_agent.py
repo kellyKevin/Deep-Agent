@@ -1,10 +1,15 @@
 from .base import BaseAgent
 from typing import Dict, Any, List
 
-class IrrigationDecisionAgent(BaseAgent):
-    """Purpose: Decide watering strategy."""
+class IrrigationDecisionSubagent(BaseAgent):
+    """
+    Purpose: Decide watering strategy.
+    Combines: Soil data, Weather prediction.
+    Outputs: Water now, Delay, Skip.
+    """
     def __init__(self):
-        super().__init__("IrrigationDecisionAgent")
+        super().__init__("IrrigationDecisionSubagent")
+        self.base_threshold_dry = 40
 
     def _is_recent_watering(self, last_watered: str) -> bool:
         if not last_watered:
@@ -28,20 +33,24 @@ class IrrigationDecisionAgent(BaseAgent):
         confidence = "high"
 
         # Intelligence Inheritance: Adjust strategy based on past effectiveness
+        current_threshold = self.base_threshold_dry
         strategy_adjustment = ""
         if insights:
-            ineffective_count = sum(1 for i in insights[-10:] if i.get("effectiveness", {}).get("status") == "ineffective")
-            if ineffective_count > 3:
-                strategy_adjustment = " (Adjusted: Increased threshold due to recent ineffectiveness)"
-                # In a real scenario, we might dynamicall adjust thresholds here
+            effective_actions = [i for i in insights if "effectiveness" in i]
+            if effective_actions:
+                ineffective_count = sum(1 for i in effective_actions[-10:] if i["effectiveness"]["status"] == "ineffective")
+                if ineffective_count > 3:
+                    # If watering isn't effective, maybe we should water earlier (higher threshold)
+                    current_threshold += 5
+                    strategy_adjustment = f" (Intelligence Inherited: Increased dry threshold to {current_threshold}% due to recent ineffectiveness)"
 
         if soil_info["status"] == "wet":
             decision = "OFF"
             reasons.append(f"Soil is wet ({soil_info['moisture']}%).")
-        elif soil_info["status"] == "optimal":
+        elif soil_info["moisture"] >= current_threshold and soil_info["status"] != "extremely_dry":
             decision = "OFF"
-            reasons.append(f"Soil moisture is optimal ({soil_info['moisture']}%).")
-        elif soil_info["needs_water"]:
+            reasons.append(f"Soil moisture is sufficient ({soil_info['moisture']}% vs threshold {current_threshold}%).")
+        elif soil_info["needs_water"] or soil_info["moisture"] < current_threshold:
             if weather_info["can_wait_for_rain"] and soil_info["status"] != "extremely_dry":
                 decision = "OFF"
                 reasons.append("Soil is dry but rain is expected soon. Conserving water.")
@@ -50,7 +59,7 @@ class IrrigationDecisionAgent(BaseAgent):
                 reasons.append(f"Soil is dry but it was recently watered ({last_watered}). Waiting for absorption.")
             else:
                 decision = "ON"
-                reasons.append(f"Soil is {soil_info['status']} and no immediate relief from weather.{strategy_adjustment}")
+                reasons.append(f"Soil requires hydration ({soil_info['status']}). {strategy_adjustment}")
                 if weather_info["high_evaporation"]:
                     reasons.append("High evaporation risk detected due to heat.")
                 if soil_info["trend"] == "drying_fast":
@@ -59,5 +68,6 @@ class IrrigationDecisionAgent(BaseAgent):
         return {
             "decision": decision,
             "reason": " ".join(reasons),
-            "confidence": confidence
+            "confidence": confidence,
+            "threshold_used": current_threshold
         }

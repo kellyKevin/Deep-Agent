@@ -2,7 +2,10 @@ from .base import BaseAgent
 from typing import Dict, Any
 
 class WeatherSubagent(BaseAgent):
-    """Purpose: Understand external conditions."""
+    """
+    Purpose: Understand external conditions.
+    Answers: “Will it rain soon?”
+    """
     def __init__(self):
         super().__init__("WeatherSubagent")
 

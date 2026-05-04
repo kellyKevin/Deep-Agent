@@ -32,7 +32,7 @@ class TestSmartIrrigationAgent(unittest.TestCase):
         }
         result = self.agent.decide(data)
         self.assertEqual(result["decision"], "ON")
-        self.assertIn("Soil is dry and no immediate relief", result["reason"])
+        self.assertIn("Soil requires hydration", result["reason"])
 
     def test_extremely_dry_with_rain(self):
         data = {
@@ -79,8 +79,8 @@ class TestSmartIrrigationAgent(unittest.TestCase):
         self.assertIn("High evaporation risk detected", result["reason"])
 
     def test_soil_trend_analysis(self):
-        from agents.soil_agent import SoilIntelligenceAgent
-        soil_agent = SoilIntelligenceAgent()
+        from agents.soil_agent import SoilIntelligenceSubagent
+        soil_agent = SoilIntelligenceSubagent()
 
         # Scenario: Soil is drying
         history = [
@@ -103,16 +103,17 @@ class TestSmartIrrigationAgent(unittest.TestCase):
     def test_learning_agent_insight_storage(self):
         import os
         import json
-        from agents.learning_agent import LearningAgent
+        from agents.learning_agent import LearningSubagent
 
         kb_path = "test_knowledge_base.json"
         if os.path.exists(kb_path):
             os.remove(kb_path)
 
-        learning_agent = LearningAgent(knowledge_base_path=kb_path)
+        learning_agent = LearningSubagent(knowledge_base_path=kb_path)
 
         input_data = {"soil_moisture": 30}
         result = {"decision": "ON", "reason": "Dry"}
+        # Needs > 2% gain for effective
         history = [{"action": "PUMP_ON", "sensors": {"moisture": 25}}]
 
         learning_agent.learn(input_data, result, history)
@@ -122,8 +123,31 @@ class TestSmartIrrigationAgent(unittest.TestCase):
             insights = json.load(f)
             self.assertEqual(len(insights), 1)
             self.assertEqual(insights[0]["effectiveness"]["moisture_gain"], 5)
+            self.assertEqual(insights[0]["effectiveness"]["status"], "effective")
 
         os.remove(kb_path)
+
+    def test_intelligence_inheritance(self):
+        from agents.decision_agent import IrrigationDecisionSubagent
+        decision_agent = IrrigationDecisionSubagent()
+
+        # Mock insights with many ineffective actions
+        insights = [
+            {"effectiveness": {"status": "ineffective"}} for _ in range(5)
+        ]
+
+        # Soil is at 42% (Optimal > 40%)
+        soil_info = {"status": "optimal", "moisture": 42, "needs_water": False, "trend": "stable"}
+        weather_info = {"can_wait_for_rain": False, "high_evaporation": False}
+
+        # Without insights, it should be OFF
+        result_no_insights = decision_agent.decide(soil_info, weather_info, "10 hours ago")
+        self.assertEqual(result_no_insights["decision"], "OFF")
+
+        # With insights, threshold should increase to 45%, so 42% is now "requires hydration"
+        result_with_insights = decision_agent.decide(soil_info, weather_info, "10 hours ago", insights)
+        self.assertEqual(result_with_insights["decision"], "ON")
+        self.assertIn("Intelligence Inherited", result_with_insights["reason"])
 
 if __name__ == "__main__":
     unittest.main()

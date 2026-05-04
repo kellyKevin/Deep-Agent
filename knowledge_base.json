@@ -28,5 +28,200 @@
     },
     "decision": "OFF",
     "reason": "Soil is dry but rain is expected soon. Conserving water."
+  },
+  {
+    "timestamp": "2026-05-04T16:24:20.456574",
+    "input": {
+      "soil_moisture": 35,
+      "temperature": 28,
+      "humidity": 60,
+      "last_watered": "2 hours ago",
+      "timestamp": "2026-05-04T16:24:20.456360",
+      "rain_expected": true,
+      "time_of_day": 16,
+      "forecast": "Cloudy"
+    },
+    "decision": "OFF",
+    "reason": "Soil is dry but rain is expected soon. Conserving water."
+  },
+  {
+    "timestamp": "2026-05-04T16:24:30.458367",
+    "input": {
+      "soil_moisture": 35,
+      "temperature": 28,
+      "humidity": 60,
+      "last_watered": "2 hours ago",
+      "timestamp": "2026-05-04T16:24:30.458054",
+      "rain_expected": true,
+      "time_of_day": 16,
+      "forecast": "Cloudy"
+    },
+    "decision": "OFF",
+    "reason": "Soil is dry but rain is expected soon. Conserving water."
+  },
+  {
+    "timestamp": "2026-05-04T16:24:40.460029",
+    "input": {
+      "soil_moisture": 35,
+      "temperature": 28,
+      "humidity": 60,
+      "last_watered": "2 hours ago",
+      "timestamp": "2026-05-04T16:24:40.459621",
+      "rain_expected": true,
+      "time_of_day": 16,
+      "forecast": "Cloudy"
+    },
+    "decision": "OFF",
+    "reason": "Soil is dry but rain is expected soon. Conserving water."
+  },
+  {
+    "timestamp": "2026-05-04T16:24:50.461970",
+    "input": {
+      "soil_moisture": 35,
+      "temperature": 28,
+      "humidity": 60,
+      "last_watered": "2 hours ago",
+      "timestamp": "2026-05-04T16:24:50.461548",
+      "rain_expected": true,
+      "time_of_day": 16,
+      "forecast": "Cloudy"
+    },
+    "decision": "OFF",
+    "reason": "Soil is dry but rain is expected soon. Conserving water."
+  },
+  {
+    "timestamp": "2026-05-04T16:25:00.464200",
+    "input": {
+      "soil_moisture": 35,
+      "temperature": 28,
+      "humidity": 60,
+      "last_watered": "2 hours ago",
+      "timestamp": "2026-05-04T16:25:00.463753",
+      "rain_expected": true,
+      "time_of_day": 16,
+      "forecast": "Cloudy"
+    },
+    "decision": "OFF",
+    "reason": "Soil is dry but rain is expected soon. Conserving water."
+  },
+  {
+    "timestamp": "2026-05-04T16:25:10.465763",
+    "input": {
+      "soil_moisture": 35,
+      "temperature": 28,
+      "humidity": 60,
+      "last_watered": "2 hours ago",
+      "timestamp": "2026-05-04T16:25:10.465447",
+      "rain_expected": true,
+      "time_of_day": 16,
+      "forecast": "Cloudy"
+    },
+    "decision": "OFF",
+    "reason": "Soil is dry but rain is expected soon. Conserving water."
+  },
+  {
+    "timestamp": "2026-05-04T16:25:20.467650",
+    "input": {
+      "soil_moisture": 35,
+      "temperature": 28,
+      "humidity": 60,
+      "last_watered": "2 hours ago",
+      "timestamp": "2026-05-04T16:25:20.467214",
+      "rain_expected": true,
+      "time_of_day": 16,
+      "forecast": "Cloudy"
+    },
+    "decision": "OFF",
+    "reason": "Soil is dry but rain is expected soon. Conserving water."
+  },
+  {
+    "timestamp": "2026-05-04T16:25:30.469654",
+    "input": {
+      "soil_moisture": 35,
+      "temperature": 28,
+      "humidity": 60,
+      "last_watered": "2 hours ago",
+      "timestamp": "2026-05-04T16:25:30.469414",
+      "rain_expected": true,
+      "time_of_day": 16,
+      "forecast": "Cloudy"
+    },
+    "decision": "OFF",
+    "reason": "Soil is dry but rain is expected soon. Conserving water."
+  },
+  {
+    "timestamp": "2026-05-04T16:25:40.471209",
+    "input": {
+      "soil_moisture": 35,
+      "temperature": 28,
+      "humidity": 60,
+      "last_watered": "2 hours ago",
+      "timestamp": "2026-05-04T16:25:40.470929",
+      "rain_expected": true,
+      "time_of_day": 16,
+      "forecast": "Cloudy"
+    },
+    "decision": "OFF",
+    "reason": "Soil is dry but rain is expected soon. Conserving water."
+  },
+  {
+    "timestamp": "2026-05-04T16:25:50.473028",
+    "input": {
+      "soil_moisture": 35,
+      "temperature": 28,
+      "humidity": 60,
+      "last_watered": "2 hours ago",
+      "timestamp": "2026-05-04T16:25:50.472693",
+      "rain_expected": true,
+      "time_of_day": 16,
+      "forecast": "Cloudy"
+    },
+    "decision": "OFF",
+    "reason": "Soil is dry but rain is expected soon. Conserving water."
+  },
+  {
+    "timestamp": "2026-05-04T16:26:00.474668",
+    "input": {
+      "soil_moisture": 35,
+      "temperature": 28,
+      "humidity": 60,
+      "last_watered": "2 hours ago",
+      "timestamp": "2026-05-04T16:26:00.474431",
+      "rain_expected": true,
+      "time_of_day": 16,
+      "forecast": "Cloudy"
+    },
+    "decision": "OFF",
+    "reason": "Soil is dry but rain is expected soon. Conserving water."
+  },
+  {
+    "timestamp": "2026-05-04T16:26:10.476722",
+    "input": {
+      "soil_moisture": 35,
+      "temperature": 28,
+      "humidity": 60,
+      "last_watered": "2 hours ago",
+      "timestamp": "2026-05-04T16:26:10.476240",
+      "rain_expected": true,
+      "time_of_day": 16,
+      "forecast": "Cloudy"
+    },
+    "decision": "OFF",
+    "reason": "Soil is dry but rain is expected soon. Conserving water."
+  },
+  {
+    "timestamp": "2026-05-04T16:26:20.478930",
+    "input": {
+      "soil_moisture": 35,
+      "temperature": 28,
+      "humidity": 60,
+      "last_watered": "2 hours ago",
+      "timestamp": "2026-05-04T16:26:20.478674",
+      "rain_expected": true,
+      "time_of_day": 16,
+      "forecast": "Cloudy"
+    },
+    "decision": "OFF",
+    "reason": "Soil is dry but rain is expected soon. Conserving water."
   }
 ]

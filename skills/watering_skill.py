@@ -8,13 +8,18 @@ class WateringProcedureSkill:
 
     def execute(self, duration_seconds: int = 5) -> Dict[str, Any]:
         """
-        - Check moisture threshold (implied by being called)
+        - Check moisture threshold
         - Activate pump
         - Wait X seconds
         - Deactivate pump
+        - Verify increase
         - Log results
         """
-        print(f"Starting watering procedure for {duration_seconds} seconds...")
+        # Initial moisture
+        telemetry = self.device_agent.get_telemetry()
+        start_moisture = telemetry.get("soil", {}).get("soil_moisture", 0)
+
+        print(f"Starting watering procedure for {duration_seconds} seconds. Initial moisture: {start_moisture}%")
 
         # Activate pump
         self.device_agent.execute_command("ON")
@@ -25,8 +30,14 @@ class WateringProcedureSkill:
         # Deactivate pump
         self.device_agent.execute_command("OFF")
 
+        # Post-watering verification
+        telemetry_after = self.device_agent.get_telemetry()
+        end_moisture = telemetry_after.get("soil", {}).get("soil_moisture", 0)
+        improvement = end_moisture - start_moisture
+
         return {
             "status": "completed",
             "duration": duration_seconds,
-            "message": f"Watered for {duration_seconds} seconds"
+            "moisture_gain": improvement,
+            "message": f"Watered for {duration_seconds} seconds. Gain: {improvement}%"
         }

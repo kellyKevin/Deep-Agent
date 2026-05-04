@@ -1,13 +1,20 @@
 from .base import BaseAgent
 from typing import Dict, Any
 
-class DeviceControlAgent(BaseAgent):
-    """Purpose: Interface with ESP32 / Mock API."""
+class DeviceControlSubagent(BaseAgent):
+    """
+    Purpose: Interface with ESP32.
+    Sends commands: ON/OFF pump.
+    Receives sensor data.
+    """
     def __init__(self, api_client):
-        super().__init__("DeviceControlAgent")
+        super().__init__("DeviceControlSubagent")
         self.api_client = api_client
 
     def get_telemetry(self) -> Dict[str, Any]:
+        if not self.api_client:
+            return {"soil": {}, "weather": {}, "history": []}
+
         soil_data = self.api_client.get_soil_data()
         weather_data = self.api_client.get_weather()
         history = []
