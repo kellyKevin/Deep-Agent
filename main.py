@@ -2,9 +2,14 @@ import time
 import logging
 import json
 import os
+import sys
 from dotenv import load_dotenv
-from agent import SmartIrrigationAgent
-from mock_api import MockIrrigationAPI
+
+# Ensure the root directory is in the path so we can import from agents and api
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+from agents import SmartIrrigationAgent
+from api.mock_api import MockIrrigationAPI
 
 # Configure logging
 logging.basicConfig(
@@ -20,11 +25,11 @@ def main():
     api_client = MockIrrigationAPI()
     agent = SmartIrrigationAgent(api_client)
 
-    logger.info("Smart Irrigation Agent started. Press Ctrl+C to stop.")
+    logger.info("Smart Irrigation Deep Agent Ecosystem started. Press Ctrl+C to stop.")
 
     try:
         while True:
-            logger.info("Analyzing conditions...")
+            logger.info("Mission Control: Analyzing conditions...")
             result = agent.run_once()
 
             # Print decision in strict JSON format
