@@ -1,0 +1,21 @@
+[
+  {
+    "timestamp": "2026-05-04T15:53:34.446563",
+    "input": {
+      "soil_moisture": 35,
+      "temperature": 28,
+      "humidity": 60,
+      "last_watered": "2 hours ago",
+      "timestamp": "2026-05-04T15:53:34.446504",
+      "rain_expected": true,
+      "time_of_day": 15,
+      "forecast": "Cloudy"
+    },
+    "decision": "OFF",
+    "reason": "Conserving water; rain expected.",
+    "effectiveness": {
+      "status": "unknown",
+      "gain": 0
+    }
+  }
+]

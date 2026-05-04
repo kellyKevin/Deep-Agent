@@ -1,0 +1,24 @@
+INFO:SmartIrrigationApp:Smart Irrigation Agent started. Press Ctrl+C to stop.
+INFO:SmartIrrigationApp:Analyzing conditions...
+{
+  "decision": "OFF",
+  "reason": "Conserving water; rain expected.",
+  "confidence": "high",
+  "duration": 0,
+  "metadata": {
+    "soil": {
+      "moisture": 35,
+      "status": "dry",
+      "trend": "stable",
+      "needs_water": true
+    },
+    "weather": {
+      "rain_expected": true,
+      "can_wait_for_rain": true,
+      "high_evaporation": false,
+      "temperature": 28
+    },
+    "timestamp": 1777910014.4475222
+  }
+}
+INFO:SmartIrrigationApp:Decision: OFF | Confidence: high

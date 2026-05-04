@@ -1,0 +1,14 @@
+[
+  {
+    "timestamp": "2026-05-04T15:52:38.443234",
+    "input": {
+      "soil_moisture": 30
+    },
+    "decision": "ON",
+    "reason": "Dry",
+    "effectiveness": {
+      "status": "effective",
+      "gain": 5
+    }
+  }
+]

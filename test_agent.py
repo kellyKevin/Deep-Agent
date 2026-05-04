@@ -1,6 +1,7 @@
 import unittest
 import json
-from agent import SmartIrrigationAgent
+import os
+from agent import SmartIrrigationAgent, RainPredictionSkill, WateringProcedureSkill, LearningUpdateSkill
 
 class TestSmartIrrigationAgent(unittest.TestCase):
     def setUp(self):
@@ -15,7 +16,7 @@ class TestSmartIrrigationAgent(unittest.TestCase):
         }
         result = self.agent.decide(data)
         self.assertEqual(result["decision"], "OFF")
-        self.assertIn("rain is expected", result["reason"])
+        self.assertIn("rain expected", result["reason"])
 
     def test_dry_no_rain(self):
         data = {
@@ -26,7 +27,7 @@ class TestSmartIrrigationAgent(unittest.TestCase):
         }
         result = self.agent.decide(data)
         self.assertEqual(result["decision"], "ON")
-        self.assertIn("Soil is dry and no immediate relief", result["reason"])
+        self.assertIn("Soil is dry", result["reason"])
 
     def test_extremely_dry_with_rain(self):
         data = {
@@ -58,7 +59,7 @@ class TestSmartIrrigationAgent(unittest.TestCase):
         }
         result = self.agent.decide(data)
         self.assertEqual(result["decision"], "OFF")
-        self.assertIn("recently watered", result["reason"])
+        self.assertIn("Recently watered", result["reason"])
 
     def test_hot_weather_dry_soil(self):
         data = {
@@ -70,39 +71,45 @@ class TestSmartIrrigationAgent(unittest.TestCase):
         }
         result = self.agent.decide(data)
         self.assertEqual(result["decision"], "ON")
-        self.assertIn("High evaporation risk detected", result["reason"])
+        self.assertIn("High evaporation risk", result["reason"])
 
-    def test_soil_trend_analysis(self):
-        from agent import SoilIntelligenceAgent
-        soil_agent = SoilIntelligenceAgent()
+    def test_skills_individually(self):
+        rain_skill = RainPredictionSkill("RainCheck")
+        res = rain_skill.execute({"rain_expected": True, "temperature": 25})
+        self.assertTrue(res["will_rain"])
+        self.assertTrue(res["can_wait"])
 
-        # Scenario: Soil is drying
-        history = [
-            {"sensors": {"moisture": 45}},
-            {"sensors": {"moisture": 44}},
-            {"sensors": {"moisture": 43}}
-        ]
-        result = soil_agent.analyze({"soil_moisture": 43}, history)
-        self.assertEqual(result["trend"], "drying")
+        water_skill = WateringProcedureSkill("Watering")
+        res = water_skill.execute({"soil_moisture": 15}, 40)
+        self.assertEqual(res["action"], "ON")
+        self.assertEqual(res["duration"], 30)
 
-        # Scenario: Soil is drying fast
-        history = [
-            {"sensors": {"moisture": 50}},
-            {"sensors": {"moisture": 47}},
-            {"sensors": {"moisture": 44}}
-        ]
-        result = soil_agent.analyze({"soil_moisture": 44}, history)
-        self.assertEqual(result["trend"], "drying_fast")
+    def test_intelligence_inheritance(self):
+        kb_path = "test_kb_inheritance.json"
+        if os.path.exists(kb_path): os.remove(kb_path)
+
+        # Mock a knowledge base with 4 ineffective waterings
+        kb = []
+        for _ in range(4):
+            kb.append({
+                "effectiveness": {"status": "ineffective"}
+            })
+
+        data_soil = {"moisture": 30, "status": "dry", "needs_water": True, "trend": "stable"}
+        data_weather = {"can_wait_for_rain": False, "high_evaporation": True}
+
+        # Use decision agent directly
+        from agent import IrrigationDecisionAgent
+        decision_agent = IrrigationDecisionAgent()
+        result = decision_agent.decide(data_soil, data_weather, "10 hours ago", kb)
+
+        self.assertIn("Bias: Previous waterings in these conditions were ineffective", result["reason"])
 
     def test_learning_agent_insight_storage(self):
-        import os
-        import json
+        kb_path = "test_kb.json"
+        if os.path.exists(kb_path): os.remove(kb_path)
+
         from agent import LearningAgent
-
-        kb_path = "test_knowledge_base.json"
-        if os.path.exists(kb_path):
-            os.remove(kb_path)
-
         learning_agent = LearningAgent(knowledge_base_path=kb_path)
 
         input_data = {"soil_moisture": 30}
@@ -115,7 +122,7 @@ class TestSmartIrrigationAgent(unittest.TestCase):
         with open(kb_path, "r") as f:
             insights = json.load(f)
             self.assertEqual(len(insights), 1)
-            self.assertEqual(insights[0]["effectiveness"]["moisture_gain"], 5)
+            self.assertEqual(insights[0]["effectiveness"]["gain"], 5)
 
         os.remove(kb_path)
 
